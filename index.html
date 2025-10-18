@@ -30,12 +30,14 @@
   <div class="row">
     <label for="name">Name / பெயர்</label>
     <input type="text" id="name" name="name" autocomplete="off" />
-    <button type="button" id="btnName">🔊 Play</button>
+    <button type="button" id="btnNamePlay">🔊 Play</button>
+    <button type="button" id="btnNameRec">🎤 Speak</button>
   </div>
   <div class="row">
     <label for="location">Farm Location / பண்ணை இருப்பிடம்</label>
     <input type="text" id="location" name="location" autocomplete="off" />
-    <button type="button" id="btnLocation">🔊 Play</button>
+    <button type="button" id="btnLocationPlay">🔊 Play</button>
+    <button type="button" id="btnLocationRec">🎤 Speak</button>
   </div>
   <div class="row">
     <label for="account">Bank Account Number / வங்கி கணக்கு எண் (Camera Capture)</label>
@@ -47,12 +49,14 @@
   <div class="row">
     <label for="subsidy">Subsidy Type / உதவி வகை</label>
     <input type="text" id="subsidy" name="subsidy" autocomplete="off" />
-    <button type="button" id="btnSubsidy">🔊 Play</button>
+    <button type="button" id="btnSubsidyPlay">🔊 Play</button>
+    <button type="button" id="btnSubsidyRec">🎤 Speak</button>
   </div>
   <div class="row">
     <label for="desc">Description / விவரம்</label>
     <textarea id="desc" name="desc" rows="4"></textarea>
-    <button type="button" id="btnDesc">🔊 Play</button>
+    <button type="button" id="btnDescPlay">🔊 Play</button>
+    <button type="button" id="btnDescRec">🎤 Speak</button>
   </div>
   <button type="submit">Submit / சமர்ப்பிக்கவும்</button>
 </form>
@@ -65,6 +69,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
 <script>
+  // Play uploaded Tamil voice recording on play button click
   function playPreRecordedAudio(audioId) {
     document.querySelectorAll('audio').forEach(audio => {
       audio.pause();
@@ -74,11 +79,43 @@
     if (audioToPlay) audioToPlay.play();
   }
 
-  document.getElementById('btnName').addEventListener('click', () => playPreRecordedAudio('audioName'));
-  document.getElementById('btnLocation').addEventListener('click', () => playPreRecordedAudio('audioLocation'));
-  document.getElementById('btnSubsidy').addEventListener('click', () => playPreRecordedAudio('audioSubsidy'));
-  document.getElementById('btnDesc').addEventListener('click', () => playPreRecordedAudio('audioDesc'));
+  // Speech recognition setup
+  function startSpeechRecognition(inputId, btn) {
+    if (!('webkitSpeechRecognition' in window)) {
+      alert('Speech recognition not supported');
+      return;
+    }
+    let recognition = new webkitSpeechRecognition();
+    recognition.lang = 'ta-IN';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+    recognition.start();
+    btn.textContent = '🛑 Stop';
+    recognition.onresult = (e) => {
+      const text = e.results[0][0].transcript;
+      document.getElementById(inputId).value = text;
+    };
+    recognition.onerror = () => {
+      btn.textContent = '🎤 Speak';
+    };
+    recognition.onend = () => {
+      btn.textContent = '🎤 Speak';
+    };
+  }
 
+  // Bind play buttons
+  document.getElementById('btnNamePlay').onclick = () => playPreRecordedAudio('audioName');
+  document.getElementById('btnLocationPlay').onclick = () => playPreRecordedAudio('audioLocation');
+  document.getElementById('btnSubsidyPlay').onclick = () => playPreRecordedAudio('audioSubsidy');
+  document.getElementById('btnDescPlay').onclick = () => playPreRecordedAudio('audioDesc');
+
+  // Bind speech recognition buttons
+  document.getElementById('btnNameRec').onclick = function() { startSpeechRecognition('name', this); };
+  document.getElementById('btnLocationRec').onclick = function() { startSpeechRecognition('location', this); };
+  document.getElementById('btnSubsidyRec').onclick = function() { startSpeechRecognition('subsidy', this); };
+  document.getElementById('btnDescRec').onclick = function() { startSpeechRecognition('desc', this); };
+
+  // Camera capture for Bank Account OCR
   const video = document.getElementById('video');
   const canvas = document.getElementById('canvas');
   const accountInput = document.getElementById('account');
@@ -87,7 +124,7 @@
 
   async function startCamera() {
     if (!stream) {
-      stream = await navigator.mediaDevices.getUserMedia({video: { facingMode: 'environment' }});
+      stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
       video.srcObject = stream;
       video.style.display = 'block';
       canvas.style.display = 'none';
