@@ -2,6 +2,7 @@
 <html lang="ta">
 <head>
 <meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Accessible Subsidy Application</title>
 <style>
   body { font-family: Arial, sans-serif; max-width: 700px; margin:20px auto; padding:20px; background:#f0f4f8; }
@@ -11,72 +12,119 @@
   button { background:#2980b9; color:white; border:none; padding:12px 20px; border-radius:6px; cursor:pointer; font-size:1em; margin-top:10px; }
   button.recording { background:#c0392b; }
   button:hover { filter: brightness(0.9); }
+  .row { display: flex; align-items:center; gap:12px; }
+  .row > input, .row > select, .row > textarea { flex-grow:1; }
+  .language-select { margin-bottom: 20px; }
+  #canvas { display:none; max-width: 100%; margin-top: 10px; border: 2px solid #555; border-radius: 6px; }
+  #video { display: none; border: 1px solid #ccc; border-radius: 6px; margin-top: 10px; max-width: 100%; }
 </style>
 </head>
 <body>
 <h1>விவசாயி உதவி விண்ணப்பம்</h1>
-
-<form id="applicationForm">
-  <label for="name">பெயர் / Name</label>
-  <input type="text" id="name" name="name" />
-
-  <label for="location">பண்ணை இருப்பிடம் / Farm Location</label>
-  <input type="text" id="location" name="location" />
-
-  <label for="account">வங்கி கணக்கு எண் / Bank Account (Camera Capture)</label>
-  <input type="text" id="account" name="account" readonly />
-  <button type="button" id="captureBtn">📷 Capture</button>
-
-  <label for="subsidy">உதவி வகை / Subsidy Type</label>
-  <input type="text" id="subsidy" name="subsidy" />
-
-  <label for="desc">விவரம் / Description</label>
-  <textarea id="desc" name="desc" rows="4"></textarea>
-
-  <button type="submit">சமர்ப்பிக்க / Submit</button>
+<div class="language-select">
+  <label for="lang">Select Voice Guidance Language / மொழியைத் தேர்ந்தெடுக்கவும்:</label>
+  <select id="lang" disabled>
+    <option value="ta-IN" selected>தமிழ் (Tamil)</option>
+  </select>
+</div>
+<form id="form">
+  <div class="row">
+    <label for="name">Name / பெயர்</label>
+    <input type="text" id="name" name="name" autocomplete="off" />
+    <button type="button" id="btnName">🔊 Play</button>
+  </div>
+  <div class="row">
+    <label for="location">Farm Location / பண்ணை இருப்பிடம்</label>
+    <input type="text" id="location" name="location" autocomplete="off" />
+    <button type="button" id="btnLocation">🔊 Play</button>
+  </div>
+  <div class="row">
+    <label for="account">Bank Account Number / வங்கி கணக்கு எண் (Camera Capture)</label>
+    <input type="text" id="account" name="account" readonly />
+    <button type="button" id="btnCaptureAccount">📷 Capture</button>
+  </div>
+  <video id="video" width="320" height="240" autoplay playsinline></video>
+  <canvas id="canvas" width="320" height="240"></canvas>
+  <div class="row">
+    <label for="subsidy">Subsidy Type / உதவி வகை</label>
+    <input type="text" id="subsidy" name="subsidy" autocomplete="off" />
+    <button type="button" id="btnSubsidy">🔊 Play</button>
+  </div>
+  <div class="row">
+    <label for="desc">Description / விவரம்</label>
+    <textarea id="desc" name="desc" rows="4"></textarea>
+    <button type="button" id="btnDesc">🔊 Play</button>
+  </div>
+  <button type="submit">Submit / சமர்ப்பிக்கவும்</button>
 </form>
 
-<!-- Audio elements with your hosted recordings -->
+<!-- Audio elements -->
 <audio id="audioName" src="https://drive.google.com/uc?export=download&id=1SrOuGA2r2IFrvLN1gKG9Jbv6vB_SLPN0" preload="none"></audio>
 <audio id="audioLocation" src="https://drive.google.com/uc?export=download&id=1pGKF-BnqdbjtZprM-ZRMJV7rQ_oP1NSv" preload="none"></audio>
 <audio id="audioSubsidy" src="https://drive.google.com/uc?export=download&id=1psRUf9gCS0HqGIyEzqmuvbooG0wWQ8FL" preload="none"></audio>
 <audio id="audioDesc" src="https://drive.google.com/uc?export=download&id=1kgJbi7hdhgx1QxSar2uJ2yxlrWcmmEDe" preload="none"></audio>
 
-<!-- JavaScript for controlling playback -->
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
 <script>
-function playAudio(id) {
-  document.querySelectorAll('audio').forEach(a => { a.pause(); a.currentTime = 0; });
-  document.getElementById(id).play();
-}
-
-// Button event listeners
-document.getElementById('nameBtn').onclick = () => playAudio('audioName');
-document.getElementById('locationBtn').onclick = () => playAudio('audioLocation');
-document.getElementById('subsidyBtn').onclick = () => playAudio('audioSubsidy');
-document.getElementById('descBtn').onclick = () => playAudio('audioDesc');
-
-<!-- Capture button logic for camera to scan Bank Account number -->
-const video = document.createElement('video');
-let stream;
-
-document.getElementById('captureBtn').onclick = async () => {
-  if (!stream) {
-    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-    video.srcObject = stream;
-    video.style.display = 'block';
-    document.body.appendChild(video);
-  } else {
-    // Capture image and perform OCR using Tesseract.js or similar
-    const canvas = document.createElement('canvas');
-    canvas.width = 320;
-    canvas.height = 240;
-    canvas.getContext('2d').drawImage(video, 0, 0, 320, 240);
-    stream.getTracks().forEach(track => track.stop()); // Stop webcam
-    video.remove(); // Remove video element
-
-    // Use OCR library here if needed
+  // Play uploaded Tamil voice recording on button click
+  function playPreRecordedAudio(audioId) {
+    document.querySelectorAll('audio').forEach(audio => {
+      audio.pause();
+      audio.currentTime = 0;
+    });
+    const audioToPlay = document.getElementById(audioId);
+    if (audioToPlay) audioToPlay.play();
   }
-};
+
+  document.getElementById('btnName').addEventListener('click', () => playPreRecordedAudio('audioName'));
+  document.getElementById('btnLocation').addEventListener('click', () => playPreRecordedAudio('audioLocation'));
+  document.getElementById('btnSubsidy').addEventListener('click', () => playPreRecordedAudio('audioSubsidy'));
+  document.getElementById('btnDesc').addEventListener('click', () => playPreRecordedAudio('audioDesc'));
+
+  // Camera capture code for Bank Account number OCR
+  const video = document.getElementById('video');
+  const canvas = document.getElementById('canvas');
+  const accountInput = document.getElementById('account');
+  const captureBtn = document.getElementById('btnCaptureAccount');
+  let stream;
+
+  async function startCamera() {
+    if (!stream) {
+      stream = await navigator.mediaDevices.getUserMedia({video: { facingMode: 'environment' }});
+      video.srcObject = stream;
+      video.style.display = 'block';
+      canvas.style.display = 'none';
+    }
+  }
+
+  captureBtn.onclick = async () => {
+    if (video.style.display === 'none') {
+      await startCamera();
+      return;
+    }
+    canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+    canvas.style.display = 'block';
+    video.style.display = 'none';
+    if(stream) {
+      stream.getTracks().forEach(track => track.stop());
+      stream = null;
+    }
+    const { data: { text } } = await Tesseract.recognize(canvas.toDataURL(), 'tam');
+    // Clean non-digit characters
+    const cleaned = text.replace(/D/g, '').substring(0, 30);
+    accountInput.value = cleaned;
+  };
+
+  // Form submission event
+  document.getElementById('form').onsubmit = (e) => {
+    e.preventDefault();
+    alert(`Form Submitted!
+Name: ${e.target.name.value}
+Location: ${e.target.location.value}
+Bank Account: ${e.target.account.value}
+Subsidy: ${e.target.subsidy.value}
+Description: ${e.target.desc.value}`);
+  };
 </script>
 </body>
 </html>
