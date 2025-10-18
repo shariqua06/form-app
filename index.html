@@ -7,13 +7,12 @@
 <style>
   body { font-family: Arial, sans-serif; max-width: 700px; margin:20px auto; padding:20px; background:#f0f4f8; }
   h1 { text-align:center; color:#2c3e50; }
-  label { display:block; margin:15px 0 5px; font-weight:bold; }
-  input, textarea, select { width: 100%; padding: 10px; font-size: 1.1em; border-radius:5px; border:1.2px solid #ccc; }
-  button { background:#2980b9; color:white; border:none; padding:12px 20px; border-radius:6px; cursor:pointer; font-size:1em; margin-top:10px; }
+  label { display:block; margin:15px 0 5px; font-weight:bold; width: 150px; }
+  input, textarea, select { flex-grow:1; padding: 10px; font-size: 1.1em; border-radius:5px; border:1.2px solid #ccc; }
+  button { background:#2980b9; color:white; border:none; padding:10px 15px; border-radius:6px; cursor:pointer; font-size:1em; }
   button.recording { background:#c0392b; }
   button:hover { filter: brightness(0.9); }
-  .row { display: flex; align-items:center; gap:12px; }
-  .row > input, .row > select, .row > textarea { flex-grow:1; }
+  .row { display: flex; align-items: center; gap:12px; margin-bottom: 15px; }
   .language-select { margin-bottom: 20px; }
   #canvas { display:none; max-width: 100%; margin-top: 10px; border: 2px solid #555; border-radius: 6px; }
   #video { display: none; border: 1px solid #ccc; border-radius: 6px; margin-top: 10px; max-width: 100%; }
@@ -66,7 +65,6 @@
 
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
 <script>
-  // Play uploaded Tamil voice recording on button click
   function playPreRecordedAudio(audioId) {
     document.querySelectorAll('audio').forEach(audio => {
       audio.pause();
@@ -81,7 +79,6 @@
   document.getElementById('btnSubsidy').addEventListener('click', () => playPreRecordedAudio('audioSubsidy'));
   document.getElementById('btnDesc').addEventListener('click', () => playPreRecordedAudio('audioDesc'));
 
-  // Camera capture code for Bank Account number OCR
   const video = document.getElementById('video');
   const canvas = document.getElementById('canvas');
   const accountInput = document.getElementById('account');
@@ -110,12 +107,10 @@
       stream = null;
     }
     const { data: { text } } = await Tesseract.recognize(canvas.toDataURL(), 'tam');
-    // Clean non-digit characters
     const cleaned = text.replace(/D/g, '').substring(0, 30);
     accountInput.value = cleaned;
   };
 
-  // Form submission event
   document.getElementById('form').onsubmit = (e) => {
     e.preventDefault();
     alert(`Form Submitted!
