@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ta">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Form with Camera and Speech (Tamil)</title>
+</head>
+<body>
+  <h2>படம் மற்றும் உரை மூலம் பணம் கேட்கும் படிவம்</h2>
+
+  <!-- Tamil field for money withdrawal -->
+  <form id="mainForm" autocomplete="off">
+    <label for="name">பெயர் (Name): </label>
+    <input type="text" id="name" name="name"><br><br>
+
+    <label for="amount">பணம் அடக்கு (Withdraw Money): </label>
+    <input type="number" id="amount" name="amount"><br><br>
+
+    <label for="desc">விவரம் (Description): </label>
+    <textarea id="desc" name="desc" rows="3" style="width:200px"></textarea>
+    <button type="button" onclick="startSpeech('desc')">உரை மூலம் உள்ளிடவும் (Use Speech)</button>
+    <br><br>
+
+    <!-- Camera capture (works on mobile) -->
+    <label for="photo">படம் எடு (Take a Photo):</label>
+    <input type="file" id="photo" accept="image/*" capture="environment">
+    <br><br>
+
+    <button type="submit">சமர்ப்பிக்கவும் (Submit)</button>
+  </form>
+
+  <!-- Live Camera Preview for devices/browsers supporting getUserMedia -->
+  <h3>Live Camera Preview</h3>
+  <video id="liveCam" width="320" height="240" autoplay playsinline style="border:1px solid #ccc;"></video>
+  <br>
+  <button type="button" onclick="capturePhoto()">Live கேமரா புகைப்படம் எடு (Capture Photo)</button>
+  <canvas id="canvas" width="320" height="240" style="display:none;"></canvas>
+  <br><br>
+
+  <script>
+    // Live camera preview (browser support)
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      navigator.mediaDevices.getUserMedia({
+        video: { width: { ideal: 1280 }, height: { ideal: 720 } }
+      })
+      .then(stream => {
+        document.getElementById('liveCam').srcObject = stream;
+      })
+      .catch(err => {
+        console.log("Camera error:", err);
+      });
+    }
+
+    function capturePhoto() {
+      const video = document.getElementById('liveCam');
+      const canvas = document.getElementById('canvas');
+      canvas.getContext('2d').drawImage(video, 0, 0, 320, 240);
+      canvas.style.display = 'block';
+      // Image data can be sent to server if needed
+    }
+
+    // Web Speech API for Tamil input (speech to text)
+    function startSpeech(targetId) {
+      if (!('webkitSpeechRecognition' in window)) {
+        alert('Speech recognition not supported in this browser.');
+        return;
+      }
+      const recognition = new webkitSpeechRecognition();
+      recognition.lang = 'ta-IN'; // Tamil language
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+      recognition.start();
+
+      recognition.onresult = function(event) {
+        document.getElementById(targetId).value = event.results[0][0].transcript;
+      };
+      recognition.onerror = function(event) {
+        alert('Speech error: ' + event.error);
+      };
+    }
+
+    // Prevent default submission to show entered values
+    document.getElementById('mainForm').onsubmit = function(e) {
+      e.preventDefault();
+      alert('Form Submitted!
+' +
+        'பெயர்: ' + document.getElementById('name').value + '
+' +
+        'பணம்: ' + document.getElementById('amount').value + '
+' +
+        'விவரம்: ' + document.getElementById('desc').value
+      );
+    };
+  </script>
+</body>
+</html>
