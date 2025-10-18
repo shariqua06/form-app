@@ -3,81 +3,189 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Form with Camera & Speech (Tamil)</title>
+  <title>Accessible Subsidy Application</title>
+  <style>
+    /* Clean CSS: large buttons, readable fonts, focus states */
+    body { font-family: Arial, sans-serif; max-width: 700px; margin: 20px auto; padding: 20px; background: #f0f4f8; }
+    h1 { text-align:center; color: #2c3e50; }
+    label { display:block; margin: 15px 0 5px; font-weight:bold; }
+    input, textarea, select { width: 100%; padding: 10px; font-size: 1.1em; border-radius: 5px; border: 1.2px solid #ccc; }
+    button { background: #2980b9; color: white; border:none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-size: 1em; margin-top: 10px; }
+    button.recording { background: #c0392b; }
+    .row { display: flex; align-items: center; gap: 12px; }
+    .row > input, .row > select, .row > textarea { flex-grow: 1; }
+    .language-select { margin-bottom: 20px; }
+    #canvas { display: none; max-width: 100%; margin-top: 10px; border: 2px solid #555; border-radius: 6px; }
+  </style>
 </head>
 <body>
-  <h2>படம் மற்றும் உரை மூலம் பணம் கேட்கும் படிவம்</h2>
-  <form id="mainForm" autocomplete="off">
-    <label for="name">பெயர் (Name): </label>
-    <input type="text" id="name" name="name" /><br /><br />
-    <label for="amount">பணம் அடக்கு (Withdraw Money): </label>
-    <input type="number" id="amount" name="amount" /><br /><br />
-    <label for="desc">விவரம் (Description): </label>
-    <textarea id="desc" name="desc" rows="3" style="width: 200px"></textarea>
-    <button type="button" onclick="startSpeech('desc')">உரை மூலம் உள்ளிடவும் (Use Speech)</button>
-    <br /><br />
-    <!-- Photo upload input triggers device camera on mobile -->
-    <label for="photo">படம் எடு (Take a Photo):</label>
-    <input type="file" id="photo" accept="image/*" capture="environment" />
-    <br /><br />
-    <button type="submit">சமர்ப்பிக்கவும் (Submit)</button>
+  <h1>விவசாயி உதவி விண்ணப்பம்</h1>
+
+  <div class="language-select">
+    <label for="lang">Select Voice Guidance Language / மொழியைத் தேர்ந்தெடுக்கவும்:</label>
+    <select id="lang">
+      <option value="ta-IN">தமிழ் (Tamil)</option>
+      <option value="en-US">English</option>
+    </select>
+  </div>
+
+  <form id="form">
+    <div class="row">
+      <label for="name">Name / பெயர்</label>
+      <input type="text" id="name" name="name" autocomplete="off" />
+      <button type="button" id="btnName">🎤 Start</button>
+    </div>
+
+    <div class="row">
+      <label for="location">Farm Location / பண்ணை இருப்பிடம்</label>
+      <input type="text" id="location" name="location" autocomplete="off" />
+      <button type="button" id="btnLocation">🎤 Start</button>
+    </div>
+
+    <div class="row">
+      <label for="account">Bank Account Number / வங்கி கணக்கு எண் (Camera Capture)</label>
+      <input type="text" id="account" name="account" readonly />
+      <button type="button" id="btnCaptureAccount">📷 Capture</button>
+    </div>
+
+    <video id="video" width="320" height="240" autoplay playsinline style="display:none; border:1px solid #ccc; margin-top:10px;"></video>
+    <canvas id="canvas" width="320" height="240"></canvas>
+
+    <div class="row">
+      <label for="subsidy">Subsidy Type / உதவி வகை</label>
+      <input type="text" id="subsidy" name="subsidy" autocomplete="off" />
+      <button type="button" id="btnSubsidy">🎤 Start</button>
+    </div>
+
+    <div class="row">
+      <label for="desc">Description / விவரம்</label>
+      <textarea id="desc" name="desc" rows="4"></textarea>
+      <button type="button" id="btnDesc">🎤 Start</button>
+    </div>
+
+    <button type="submit">Submit / சமர்ப்பிக்கவும்</button>
   </form>
 
-  <h3>Live Camera Preview</h3>
-  <video id="liveCam" width="320" height="240" autoplay playsinline style="border: 1px solid #ccc;"></video>
-  <br />
-  <button type="button" onclick="capturePhoto()">Live கேமரா புகைப்படம் எடு (Capture Photo)</button>
-  <canvas id="canvas" width="320" height="240" style="display: none; border: 1px solid #ccc;"></canvas>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
 
-  <script>
-    // Show live camera on supported browsers
-    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-      navigator.mediaDevices
-        .getUserMedia({ video: { width: 1280, height: 720 } })
-        .then((stream) => {
-          document.getElementById('liveCam').srcObject = stream;
-        })
-        .catch((err) => {
-          console.error('Camera error:', err);
-        });
+<script>
+  const langSelect = document.getElementById('lang');
+  const form = document.getElementById('form');
+  const recognizers = {};
+
+  function speak(text) {
+    const lang = langSelect.value || 'ta-IN';
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = lang;
+    speechSynthesis.speak(utterance);
+  }
+
+  function toggleRecognition(fieldId, btn) {
+    if (!('webkitSpeechRecognition' in window)) {
+      alert('Speech recognition not supported');
+      return;
     }
-
-    // Capture snapshot from live camera
-    function capturePhoto() {
-      const video = document.getElementById('liveCam');
-      const canvas = document.getElementById('canvas');
-      canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
-      canvas.style.display = 'block';
+    if (recognizers[fieldId]) {
+      recognizers[fieldId].stop();
+      btn.textContent = '🎤 Start';
+      btn.classList.remove('recording');
+      delete recognizers[fieldId];
+      return;
     }
-
-    // Speech to text Tamil using webkitSpeechRecognition
-    function startSpeech(targetId) {
-      if (!('webkitSpeechRecognition' in window)) {
-        alert('உரை அறிமுகம் உங்கள் உலாவியில் கிடைக்கவில்லை! (Speech recognition not supported)');
-        return;
-      }
-      const recognition = new webkitSpeechRecognition();
-      recognition.lang = 'ta-IN';
-      recognition.interimResults = false;
-      recognition.maxAlternatives = 1;
-      recognition.start();
-
-      recognition.onresult = (event) => {
-        document.getElementById(targetId).value = event.results[0][0].transcript;
-      };
-      recognition.onerror = (event) => {
-        alert('உரை பிழை: ' + event.error);
-      };
-    }
-
-    // Handle form submission
-    document.getElementById('mainForm').onsubmit = function (e) {
-      e.preventDefault();
-      alert(`படிவம் சமர்ப்பிக்கப்பட்டது!
-பெயர்: ${this.name.value}
-பணம்: ${this.amount.value}
-விவரம்: ${this.desc.value}`);
+    // voice guidance before start
+    const instructions = {
+      name: {'ta-IN': 'தயவு செய்து உங்கள் பெயரை சொல்லவும்.', 'en-US': 'Please say your name.' },
+      location: {'ta-IN': 'பண்ணையின் இருப்பிடத்தை சொல்லவும்.', 'en-US': 'Please say your farm location.'},
+      subsidy: {'ta-IN': 'உதவி வகையை சொல்லவும்.', 'en-US': 'Please say the subsidy type.'},
+      desc: {'ta-IN': 'கூடுதல் விவரங்களை சொல்லவும்.', 'en-US': 'Please say additional details.'}
     };
-  </script>
+    const instr = instructions[fieldId][langSelect.value] || instructions[fieldId]['ta-IN'];
+    speak(instr);
+
+    const recognition = new webkitSpeechRecognition();
+    recognition.lang = langSelect.value;
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+    recognition.start();
+
+    btn.textContent = '⏹ Stop';
+    btn.classList.add('recording');
+    recognizers[fieldId] = recognition;
+
+    recognition.onresult = (e) => {
+      const text = e.results[0][0].transcript;
+      document.getElementById(fieldId).value = text;
+    };
+    recognition.onerror = (e) => {
+      alert('Error: ' + e.error);
+      btn.textContent = '🎤 Start';
+      btn.classList.remove('recording');
+      delete recognizers[fieldId];
+    };
+    recognition.onend = () => {
+      btn.textContent = '🎤 Start';
+      btn.classList.remove('recording');
+      delete recognizers[fieldId];
+      // Automatically guide next? Optional.
+    };
+  }
+
+  ['Name', 'Location', 'Subsidy', 'Desc'].forEach(field => {
+    const btn = document.getElementById('btn' + field);
+    const fieldId = field.toLowerCase();
+    btn.onclick = () => toggleRecognition(fieldId, btn);
+  });
+
+  // Camera capture and OCR for bank account number
+  const video = document.getElementById('video');
+  const canvas = document.getElementById('canvas');
+  const accountInput = document.getElementById('account');
+  const captureBtn = document.getElementById('btnCaptureAccount');
+  let stream;
+
+  async function startCamera() {
+    if (!stream) {
+      stream = await navigator.mediaDevices.getUserMedia({video: { facingMode: 'environment' }});
+      video.srcObject = stream;
+      video.style.display = 'block';
+      canvas.style.display = 'none';
+    }
+  }
+
+  captureBtn.onclick = async () => {
+    if (video.style.display === 'none') {
+      await startCamera();
+      speak(langSelect.value === 'en-US' ? 'Please show your bank account number to the camera.' : 'தயவு செய்து வங்கி கணக்கு எண்ணை கேமராக்கு காட்டவும்.');
+      return;
+    }
+    // Capture photo from video
+    canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+    canvas.style.display = 'block';
+    video.style.display = 'none';
+    stream.getTracks().forEach(track => track.stop());
+    stream = null;
+
+    speak(langSelect.value === 'en-US' ? 'Processing image, please wait.' : 'படத்தை செயலாக்குகிறது, காத்திருக்கவும்.');
+
+    // OCR with Tesseract.js
+    const { data: { text } } = await Tesseract.recognize(canvas.toDataURL(), langSelect.value === 'en-US' ? 'eng' : 'tam');
+
+    const cleaned = text.replace(/s/g, '').replace(/[^d]/g, '').substring(0,30); // Remove spaces, letters, limit length
+    accountInput.value = cleaned;
+
+    speak(langSelect.value === 'en-US' ? 'Bank account number detected and entered.' : 'வங்கி கணக்கு எண் கண்டறியும் செய்து உள்ளிடப்பட்டது.');
+  };
+
+  form.onsubmit = (e) => {
+    e.preventDefault();
+    speak(langSelect.value === 'en-US' ? 'Your application has been submitted. Thank you!' : 'உங்கள் விண்ணப்பம் சமர்ப்பிக்கப்பட்டது. நன்றி!');
+    alert(`Form Submitted!
+Name: ${form.name.value}
+Location: ${form.location.value}
+Bank Account: ${form.account.value}
+Subsidy: ${form.subsidy.value}
+Description: ${form.desc.value}`);
+  };
+</script>
 </body>
 </html>
