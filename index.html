@@ -31,10 +31,10 @@
     <label for="subsidyType">Subsidy Type</label>
     <select id="subsidyType">
       <option value="">-- Select Subsidy --</option>
-      <option>Irrigation</option>
-      <option>Seeds</option>
-      <option>Fertilizers</option>
-      <option>Equipment</option>
+      <option value="urimam">Urimam (Fertilizer)</option>
+      <option value="parivu">Parivu (Irrigation)</option>
+      <option value="vidhai">Vidhai (Seed)</option>
+      <option value="ubagaranam">Ubagaranam (Equipment)</option>
     </select>
     <button type="button" id="voiceSubsidy">Speak Subsidy Type</button>
 
@@ -43,7 +43,7 @@
     <button type="button" id="voiceAmount">Speak Amount</button>
 
     <label>Aadhaar Card (Show to Camera)</label>
-    <video id="video" autoplay muted></video>
+    <video id="video" autoplay muted playsinline></video>
     <input id="aadhaarNumber" placeholder="Aadhaar Number will auto-fill here" readonly />
     <small style="color:gray;">Please hold Aadhaar card steady in front of camera</small>
 
@@ -56,96 +56,112 @@
 const video = document.getElementById('video');
 const aadhaarInput = document.getElementById('aadhaarNumber');
 const form = document.getElementById('form');
+const canvas = document.createElement('canvas');
+const ctx = canvas.getContext('2d');
+let workerReady = false;
+let ocrWorker;
 
-// Start camera
+// Safe creation & termination of Tesseract worker to prevent data clone errors
+async function initWorker() {
+  if (ocrWorker) await ocrWorker.terminate();
+  ocrWorker = Tesseract.createWorker({
+    logger: m => console.log(m)
+  });
+  await ocrWorker.load();
+  await ocrWorker.loadLanguage('eng');
+  await ocrWorker.initialize('eng');
+  workerReady = true;
+}
+initWorker();
+
+// Start camera with proper options for mobile (playsinline needed)
 navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
   .then(stream => { video.srcObject = stream; })
   .catch(err => alert('Camera access required: ' + err));
 
-// Canvas for capture
-const canvas = document.createElement('canvas');
-const ctx = canvas.getContext('2d');
-
-let workerReady = false;
-const worker = Tesseract.createWorker({ logger: m => console.log(m) });
-(async () => {
-  await worker.load();
-  await worker.loadLanguage('eng');
-  await worker.initialize('eng');
-  workerReady = true;
-})();
-
-// Periodic OCR scan
+// Periodic OCR scanning with delay and error handling
 async function scanFrame() {
-  if (!workerReady) return setTimeout(scanFrame, 1000);
+  if (!workerReady) return setTimeout(scanFrame, 2000);
+  if (video.readyState !== 4) return setTimeout(scanFrame, 2000);
   canvas.width = video.videoWidth;
   canvas.height = video.videoHeight;
-  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  ctx.drawImage(video, 0, 0);
   const dataURL = canvas.toDataURL('image/png');
-  const { data: { text } } = await worker.recognize(dataURL);
-  const match = text.match(/\bd{4}s*d{4}s*d{4}\b/);
-  if (match) {
-    const cleanNum = match[0].replace(/s/g, '');
-    if (aadhaarInput.value !== cleanNum) {
-      aadhaarInput.value = cleanNum;
-      console.log('Aadhaar detected:', cleanNum);
+  try {
+    const { data: { text } } = await ocrWorker.recognize(dataURL);
+    const match = text.match(/\bd{4}s*d{4}s*d{4}\b/);
+    if (match) {
+      const cleanNum = match[0].replace(/s/g, '');
+      if (aadhaarInput.value !== cleanNum) {
+        aadhaarInput.value = cleanNum;
+        console.log('Aadhaar detected: ', cleanNum);
+      }
     }
+  } catch(e) {
+    console.error('OCR error:', e);
+    // Reinitialize worker if error occurs to avoid lockup
+    workerReady = false;
+    initWorker();
   }
   setTimeout(scanFrame, 3000);
 }
 scanFrame();
 
-// Speech Synthesis with Tamil transliteration, then English
+// Voice Synthesis: tamil transliteration + english, using en-US locale to improve pronunciation
 const synth = window.speechSynthesis;
-function speakPrompt(tamilText, englishText, onEnd) {
+function speakPrompt(tamilTranslit, englishText, onEnd) {
   if (synth.speaking) synth.cancel();
-  const tamilUtter = new SpeechSynthesisUtterance(tamilText);
-  tamilUtter.lang = 'en-US';
+  const tamilUtter = new SpeechSynthesisUtterance(tamilTranslit);
+  tamilUtter.lang = 'en-US'; // en-US to get better male/female voice reading transliteration clearly
   const englishUtter = new SpeechSynthesisUtterance(englishText);
   englishUtter.lang = 'en-IN';
   tamilUtter.onend = () => { if (onEnd) onEnd(); synth.speak(englishUtter); };
   synth.speak(tamilUtter);
 }
 
-// English only speech recognition
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 if (!SpeechRecognition) alert('Speech Recognition not supported on your browser.');
-const recognition = new SpeechRecognition();
-recognition.lang = 'en-IN';
-recognition.interimResults = false;
-recognition.maxAlternatives = 1;
 
-// Helper for voice input with Tamil (transliterated) + English prompts
+function createRecognition() {
+  const rec = new SpeechRecognition();
+  rec.lang = 'en-IN';
+  rec.interimResults = false;
+  rec.maxAlternatives = 1;
+  return rec;
+}
+
+// Setup voice input buttons and prompts with correct Tamil transliteration phrases
 function setupVoice(buttonId, inputId, tamilPrompt, englishPrompt) {
   const btn = document.getElementById(buttonId);
   const input = document.getElementById(inputId);
 
   btn.onclick = () => {
     speakPrompt(tamilPrompt, englishPrompt, () => {
+      const recognition = createRecognition();
       recognition.start();
-    });
 
-    recognition.onresult = e => {
-      input.value = e.results[0][0].transcript;
-      recognition.stop();
-    };
-    recognition.onerror = () => recognition.stop();
+      recognition.onresult = e => {
+        input.value = e.results[0][0].transcript;
+        recognition.stop();
+      };
+      recognition.onerror = () => recognition.stop();
+    });
   };
 }
 
-setupVoice('voiceName', 'name', 'Ungal peyarai sollunga', 'Please say your name');
-setupVoice('voiceLocation', 'location', 'Ungal pannai idathai sollunga', 'Please say your farm location');
-setupVoice('voiceSubsidy', 'subsidyType', 'Thuvakka uthaviyai sollunga', 'Please say the subsidy type');
-setupVoice('voiceAmount', 'amount', 'Thogaiyai sollunga', 'Please say the amount');
+setupVoice('voiceName', 'name', 'ungal peiyarau sollavum', 'Please say your name');
+setupVoice('voiceLocation', 'location', 'pannaiyin idathai sollavum', 'Please say your farm location');
+setupVoice('voiceSubsidy', 'subsidyType', 'yendha salugai vendum', 'Please say the subsidy type');
+setupVoice('voiceAmount', 'amount', 'ungaluku vendiya thogai sollavum', 'Please say the amount');
+setupVoice('voiceSubsidy', 'subsidyType', 'yendha salugai vendum', 'Please say the subsidy type');
 
-// Form submission handler
 form.onsubmit = e => {
   e.preventDefault();
   if (!form.name.value || !form.location.value || !form.subsidyType.value || !form.amount.value || !aadhaarInput.value) {
     alert('Please fill all fields including Aadhaar number.');
     return;
   }
-  alert(`Submitted:
+  alert(`Form Submitted:
 Name: ${form.name.value}
 Location: ${form.location.value}
 Subsidy: ${form.subsidyType.value}
