@@ -1,201 +1,75 @@
-<!DOCTYPE html>
-<html lang="ta">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Subsidy Application</title>
-<style>
-  body { font-family: Arial, sans-serif; max-width: 700px; margin: 20px auto; padding: 20px; background: #f0f4f8; }
-  h1 { text-align: center; color: #2c3e50; }
-  label { font-weight: bold; margin-bottom: 6px; display: block; }
-  .row { display: flex; gap: 12px; align-items: center; margin-bottom: 16px; }
-  input, textarea, select { flex-grow: 1; padding: 10px; font-size: 1rem; border-radius: 5px; border: 1.2px solid #ccc; }
-  textarea { resize: vertical; }
-  button { background-color: #2980b9; color: white; border: none; border-radius: 6px; padding: 10px 18px; cursor: pointer; font-size: 1rem; }
-  button:hover { filter: brightness(0.9); }
-  #video, #canvas { display: none; margin-top: 10px; border-radius: 6px; max-width: 100%; }
-  #canvas { border: 2px solid #555; }
-</style>
-</head>
-<body>
-<h1>விவசாயி உதவி விண்ணப்பம்</h1>
+<div class="field">
+  <label>Language</label>
+  <select id="lang">
+    <option value="en">English</option>
+    <option value="ta">Tamil</option>
+  </select>
+</div>
 
-<label for="lang">Select Guidance Language:</label>
-<select id="lang">
-  <option value="ta-IN" selected>தமிழ் (Tamil)</option>
-  <option value="en-US">English</option>
-</select>
-
-<form id="form">
-  <div class="row">
-    <label for="name">Name / பெயர்</label>
-    <input type="text" id="name" name="name" autocomplete="off" />
-    <button type="button" id="btnNamePlay">🔊 Play</button>
-    <button type="button" id="btnNameRec">🎤 Speak</button>
+<div class="field">
+  <label id="lbl-name">What is your name?</label>
+  <div class="row" aria-label="name controls">
+    <input type="text" id="name" placeholder="Your name" />
+    <button type="button" class="ghost" onclick="startVoice('name')">🎤</button>
   </div>
+</div>
 
-  <div class="row">
-    <label for="location">Farm Location / பண்ணை இருப்பிடம்</label>
-    <input type="text" id="location" name="location" autocomplete="off" />
-    <button type="button" id="btnLocationPlay">🔊 Play</button>
-    <button type="button" id="btnLocationRec">🎤 Speak</button>
+<div class="field">
+  <label id="lbl-location">Location of farm</label>
+  <div class="row" aria-label="location controls">
+    <input type="text" id="location" placeholder="Farm location" />
+    <button type="button" class="ghost" onclick="startVoice('location')">🎤</button>
   </div>
+</div>
 
-  <div class="row">
-    <label for="account">Bank Account Number / வங்கி கணக்கு எண் (Camera Capture)</label>
-    <input type="text" id="account" name="account" readonly />
-    <button type="button" id="btnCaptureAccount">📷 Capture</button>
+<div class="field">
+  <label id="lbl-subtype">Type of Subsidy</label>
+  <div class="row" aria-label="subsidy type controls" style="align-items:center;">
+    <select id="subsidy">
+      <option value="">Select subsidy</option>
+      <option>Fertilizer Subsidy</option>
+      <option>Irrigation Subsidy</option>
+      <option>Seed Subsidy</option>
+      <option>Equipment Subsidy</option>
+    </select>
+    <button type="button" class="ghost" onclick="playPrompt('subsidy')">🔊</button>
   </div>
-  <video id="video" width="320" height="240" autoplay playsinline></video>
-  <canvas id="canvas" width="320" height="240"></canvas>
+</div>
 
-  <div class="row">
-    <label for="subsidy">Subsidy Type / உதவி வகை</label>
-    <input type="text" id="subsidy" name="subsidy" autocomplete="off" />
-    <button type="button" id="btnSubsidyPlay">🔊 Play</button>
-    <button type="button" id="btnSubsidyRec">🎤 Speak</button>
+<div class="field">
+  <label id="lbl-aadhaar">Aadhaar number (camera input)</label>
+  <div class="row" aria-label="aadhaar controls">
+    <input type="text" id="aadhaar" placeholder="Captured Aadhaar" />
+    <button type="button" class="ghost" onclick="startCamera()">📷</button>
+    <button type="button" class="ghost" onclick="startVoice('aadhaar')">🎤</button>
   </div>
+</div>
 
-  <div class="row">
-    <label for="desc">Description / விவரம்</label>
-    <textarea id="desc" name="desc" rows="4"></textarea>
-    <button type="button" id="btnDescPlay">🔊 Play</button>
-    <button type="button" id="btnDescRec">🎤 Speak</button>
+<div class="field">
+  <label id="lbl-amount">Amount</label>
+  <div class="row" aria-label="amount controls">
+    <input type="number" id="amount" placeholder="Requested amount" />
+    <button type="button" class="ghost" onclick="startVoice('amount')">🎤</button>
   </div>
+</div>
 
-  <button type="submit">Submit / சமர்ப்பிக்கவும்</button>
-</form>
+<div class="field">
+  <label id="lbl-notes">Other details</label>
+  <div class="row" aria-label="notes controls">
+    <textarea id="notes" placeholder="Any other information"></textarea>
+    <button type="button" class="ghost" onclick="startVoice('notes')">🎤</button>
+  </div>
+</div>
 
-<!-- Tamil audio files -->
-<audio id="audioNameTa" src="https://drive.google.com/uc?export=download&id=1SrOuGA2r2IFrvLN1gKG9Jbv6vB_SLPN0" preload="none"></audio>
-<audio id="audioLocationTa" src="https://drive.google.com/uc?export=download&id=1pGKF-BnqdbjtZprM-ZRMJV7rQ_oP1NSv" preload="none"></audio>
-<audio id="audioSubsidyTa" src="https://drive.google.com/uc?export=download&id=1psRUf9gCS0HqGIyEzqmuvbooG0wWQ8FL" preload="none"></audio>
-<audio id="audioDescTa" src="https://drive.google.com/uc?export=download&id=1kgJbi7hdhgx1QxSar2uJ2yxlrWcmmEDe" preload="none"></audio>
+<div class="field">
+  <label><input type="checkbox" id="declare" /> I declare that the information is correct</label>
+</div>
 
-<!-- English audio files -->
-<!-- Replace URLs below with your actual English mp3 URLs -->
-<audio id="audioNameEn" src="YOUR_ENGLISH_NAME_AUDIO_MP3_URL" preload="none"></audio>
-<audio id="audioLocationEn" src="YOUR_ENGLISH_LOCATION_AUDIO_MP3_URL" preload="none"></audio>
-<audio id="audioSubsidyEn" src="YOUR_ENGLISH_SUBSIDY_AUDIO_MP3_URL" preload="none"></audio>
-<audio id="audioDescEn" src="YOUR_ENGLISH_DESC_AUDIO_MP3_URL" preload="none"></audio>
+<div class="field actions">
+  <button class="btn" type="submit" onclick="submitForm()">Submit</button>
+</div>
 
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
-<script>
-  const langSelect = document.getElementById('lang');
-  const video = document.getElementById('video');
-  const canvas = document.getElementById('canvas');
-  const accountInput = document.getElementById('account');
-  let stream;
+<div id="status" class="footer" aria-live="polite"></div>
 
-  function getLangSuffix(){
-    return langSelect.value.startsWith('ta') ? 'Ta' : 'En';
-  }
-
-  function playAudio(field) {
-    const langSuffix = getLangSuffix();
-    document.querySelectorAll('audio').forEach(audio=>{
-      audio.pause();
-      audio.currentTime=0;
-    });
-    const audio = document.getElementById(audio${field}${langSuffix});
-    if(audio){
-      audio.play().catch(e=>{
-        console.error('Audio play failed:', e);
-        alert('Audio playback failed, please check your link or browser permissions.');
-      });
-    } else {
-      alert('Audio file for this field does not exist in selected language.');
-    }
-  }
-
-  function startSpeechRecognition(fieldId, btn){
-    if(!('webkitSpeechRecognition' in window)){
-      alert('Speech Recognition not supported in this browser.');
-      return;
-    }
-    const recognition = new webkitSpeechRecognition();
-    recognition.lang = langSelect.value;
-    recognition.interimResults = false;
-    recognition.maxAlternatives = 1;
-
-    btn.disabled = true;
-    btn.textContent = '🛑 Listening...';
-
-    recognition.onresult = e=>{
-      document.getElementById(fieldId).value = e.results[0][0].transcript;
-    };
-
-    recognition.onerror = e=>{
-      console.error('Speech recognition error:', e);
-      btn.textContent = '🎤 Speak';
-      btn.disabled = false;
-      alert('Speech recognition failed or was interrupted.');
-    };
-
-    recognition.onend = ()=>{
-      btn.textContent = '🎤 Speak';
-      btn.disabled = false;
-    };
-
-    recognition.start();
-  }
-
-  async function startCamera(){
-    try {
-      if(!stream){
-        stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
-        video.srcObject = stream;
-        video.style.display = 'block';
-        canvas.style.display = 'none';
-      }
-    } catch (e) {
-      alert('Camera permission denied or not available');
-    }
-  }
-
-  async function captureAccount(){
-    if(video.style.display==='none'){
-      await startCamera();
-      alert(langSelect.value.startsWith('ta') ? 'Please show your bank account number to the camera.' : 'Please show your bank account number to the camera.');
-      return;
-    }
-    canvas.getContext('2d').drawImage(video,0,0,canvas.width,canvas.height);
-    canvas.style.display = 'block';
-    video.style.display = 'none';
-    if(stream){
-      stream.getTracks().forEach(track=>track.stop());
-      stream=null;
-    }
-
-    try{
-      const {data: {text}} = await Tesseract.recognize(canvas.toDataURL(), langSelect.value.startsWith('ta') ? 'tam' : 'eng');
-      // Fix: escape backslash to remove non digit chars
-      const cleaned = text.replace(/D/g,'').substring(0,30);
-      accountInput.value = cleaned;
-    }catch(e){
-      alert('OCR failed, please try again.');
-    }
-  }
-
-  ['Name','Location','Subsidy','Desc'].forEach(field=>{
-    document.getElementById(btn${field}Play).addEventListener('click',()=>playAudio(field));
-    document.getElementById(btn${field}Rec).addEventListener('click',function(){
-      startSpeechRecognition(field.toLowerCase(),this);
-    });
-  });
-
-  document.getElementById('btnCaptureAccount').addEventListener('click',captureAccount);
-
-  document.getElementById('form').onsubmit = e=>{
-    e.preventDefault();
-    const f = e.target;
-    alert(`Form Submitted:
-Name: ${f.name.value}
-Farm Location: ${f.location.value}
-Bank Account: ${f.account.value}
-Subsidy Type: ${f.subsidy.value}
-Description: ${f.desc.value}`);
-  };
-</script>
-</body>
-</html>
+<video id="video" width="320" height="240" autoplay style="display:none;"></video>
+<canvas id="canvas" width="320" height="240" style="display:none;"></canvas>
