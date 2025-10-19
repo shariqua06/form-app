@@ -5,216 +5,153 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Farmer Subsidy Application Form</title>
 <style>
-  body {
-    font-family: Arial, sans-serif;
-    background: #f9f9f9;
-    margin: 0; padding: 20px;
-  }
-  .container {
-    max-width: 480px;
-    margin: auto;
-    background: white;
-    padding: 25px;
-    box-shadow: 0 0 15px rgba(0,0,0,0.1);
-    border-radius: 8px;
-  }
-  h2 {
-    text-align: center;
-    margin-bottom: 20px;
-  }
-  label {
-    display: block;
-    margin-top: 15px;
-    font-weight: bold;
-  }
-  input[type="text"], select {
-    width: 100%;
-    padding: 8px 10px;
-    margin-top: 6px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-  }
-  button {
-    margin-top: 10px;
-    padding: 8px 12px;
-    border: none;
-    background: #4CAF50;
-    color: white;
-    font-size: 14px;
-    cursor: pointer;
-    border-radius: 4px;
-  }
-  button:disabled {
-    background: #999;
-    cursor: not-allowed;
-  }
-  #aadhaar-preview {
-    margin-top: 10px;
-    max-width: 100%;
-    border-radius: 4px;
-  }
+  body { font-family: Arial, sans-serif; background: #f9f9f9; margin: 0; padding: 20px; }
+  .container { max-width: 480px; margin: auto; background: white; padding: 25px; box-shadow: 0 0 15px rgba(0,0,0,0.1); border-radius: 8px; }
+  h2 { text-align: center; margin-bottom: 20px; }
+  label { display: block; margin-top: 15px; font-weight: bold; }
+  input[type="text"], select { width: 100%; padding: 8px 10px; margin-top: 6px; border: 1px solid #ccc; border-radius: 4px; }
+  button { margin-top: 10px; padding: 8px 12px; border: none; background: #4CAF50; color: white; font-size: 14px; cursor: pointer; border-radius: 4px; }
+  button:disabled { background: #999; cursor: not-allowed; }
+  #video { width: 100%; border-radius: 8px; margin-top: 10px; border: 1px solid #ccc; }
+  #aadhaarNumber { font-weight: bold; }
 </style>
 </head>
 <body>
 <div class="container">
   <h2>Farmer Subsidy Application Form</h2>
-  <form id="subsidyForm">
+  <form id="form">
     <label for="name">Name</label>
-    <input type="text" id="name" placeholder="Enter Name" autocomplete="off" />
+    <input id="name" placeholder="Enter Name" autocomplete="off" />
     <button type="button" id="voiceName">Speak Name</button>
 
     <label for="location">Farm Location</label>
-    <input type="text" id="location" placeholder="Enter Farm Location" autocomplete="off" />
+    <input id="location" placeholder="Enter Farm Location" autocomplete="off" />
     <button type="button" id="voiceLocation">Speak Location</button>
 
     <label for="subsidyType">Subsidy Type</label>
     <select id="subsidyType">
       <option value="">-- Select Subsidy --</option>
-      <option value="Irrigation">Irrigation</option>
-      <option value="Seeds">Seeds</option>
-      <option value="Fertilizers">Fertilizers</option>
-      <option value="Equipment">Equipment</option>
+      <option>Irrigation</option>
+      <option>Seeds</option>
+      <option>Fertilizers</option>
+      <option>Equipment</option>
     </select>
     <button type="button" id="voiceSubsidy">Speak Subsidy Type</button>
 
     <label for="amount">Amount</label>
-    <input type="text" id="amount" placeholder="Enter Amount" autocomplete="off" />
+    <input id="amount" placeholder="Enter Amount" autocomplete="off" />
     <button type="button" id="voiceAmount">Speak Amount</button>
 
-    <label for="aadhaarInput">Upload Aadhaar Card Image (from Phone)</label>
-    <input type="file" accept="image/*" id="aadhaarInput" />
-    <img id="aadhaar-preview" alt="" />
-    <label for="aadhaarNumber">Aadhaar Number (Auto-filled)</label>
-    <input type="text" id="aadhaarNumber" readonly />
+    <label>Aadhaar Card (Show to Camera)</label>
+    <video id="video" autoplay muted></video>
+    <input id="aadhaarNumber" placeholder="Aadhaar Number will auto-fill here" readonly />
+    <small style="color:gray;">Please hold Aadhaar card steady in front of camera</small>
 
-    <button type="submit">Submit Form</button>
+    <button type="submit">Submit</button>
   </form>
 </div>
 
-<!-- Latest Tesseract.js CDN link as of 2025 -->
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script>
-  // Speech synthesis: Tamil and English voice prompts
-  const synth = window.speechSynthesis;
-  function speakPrompt(tamil, english, onEnd) {
-    if (synth.speaking) synth.cancel();
-    const tamilUtter = new SpeechSynthesisUtterance(tamil);
-    tamilUtter.lang = 'ta-IN';
-    const englishUtter = new SpeechSynthesisUtterance(english);
-    englishUtter.lang = 'en-IN';
-    tamilUtter.onend = () => {
-      if (onEnd) onEnd();
-      synth.speak(englishUtter);
-    };
-    synth.speak(tamilUtter);
-  }
+const video = document.getElementById('video');
+const aadhaarInput = document.getElementById('aadhaarNumber');
+const form = document.getElementById('form');
 
-  // Speech Recognition setup
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SpeechRecognition) alert('Speech Recognition not supported in this browser');
-  const recognition = new SpeechRecognition();
-  recognition.interimResults = false;
-  recognition.maxAlternatives = 1;
+// Start camera
+navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+  .then(stream => { video.srcObject = stream; })
+  .catch(err => alert('Camera access required: ' + err));
 
-  // Voice input helper function
-  function setupVoiceInput(buttonId, inputId, tamilPrompt, englishPrompt, isSelect=false) {
-    const button = document.getElementById(buttonId);
-    const input = document.getElementById(inputId);
+// Canvas for capture
+const canvas = document.createElement('canvas');
+const ctx = canvas.getContext('2d');
 
-    button.onclick = () => {
-      speakPrompt(tamilPrompt, englishPrompt, () => {
-        recognition.lang = 'ta-IN';
-        recognition.start();
-      });
+let workerReady = false;
+const worker = Tesseract.createWorker({ logger: m => console.log(m) });
+(async () => {
+  await worker.load();
+  await worker.loadLanguage('eng');
+  await worker.initialize('eng');
+  workerReady = true;
+})();
 
-      recognition.onresult = (event) => {
-        const transcript = event.results[0][0].transcript.trim();
-        if (isSelect) {
-          let matched = false;
-          for (let option of input.options) {
-            if (option.value.toLowerCase() === transcript.toLowerCase()) {
-              input.value = option.value;
-              matched = true;
-              break;
-            }
-          }
-          if (!matched) alert('Subsidy type not recognized. Please select manually.');
-        } else {
-          input.value = transcript;
-        }
-        recognition.stop();
-      };
-      recognition.onerror = () => recognition.stop();
-    };
-  }
-
-  setupVoiceInput('voiceName', 'name', 'தயவு செய்து உங்கள் பெயரை கூறுக', 'Please say your name');
-  setupVoiceInput('voiceLocation', 'location', 'தயவு செய்து உங்கள் பண்ணை இடத்தை கூறுக', 'Please say your farm location');
-  setupVoiceInput('voiceAmount', 'amount', 'தயவு செய்து தொகையை கூறுக', 'Please say the amount');
-  setupVoiceInput('voiceSubsidy', 'subsidyType', 'தயவு செய்து துவக்க உதவியை தேர்வு செய்யவும்', 'Please say the subsidy type', true);
-
-  // Tesseract.js OCR worker setup
-  const worker = Tesseract.createWorker({
-    logger: m => console.log(m)
-  });
-
-  const aadhaarInput = document.getElementById('aadhaarInput');
-  const aadhaarPreview = document.getElementById('aadhaar-preview');
-  const aadhaarNumber = document.getElementById('aadhaarNumber');
-
-  async function recognizeAadhaar(image) {
-    await worker.load();
-    await worker.loadLanguage('eng');
-    await worker.initialize('eng');
-    const { data: { text } } = await worker.recognize(image);
-    await worker.terminate();
-    return text;
-  }
-
-  aadhaarInput.addEventListener('change', async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    aadhaarPreview.src = URL.createObjectURL(file);
-    aadhaarNumber.value = 'Processing... Please wait';
-    try {
-      const text = await recognizeAadhaar(file);
-      const matched = text.match(/\bd{4}s?d{4}s?d{4}\b/);
-      aadhaarNumber.value = matched ? matched[0].replace(/s/g, '') : 'Not detected';
-    } catch (err) {
-      aadhaarNumber.value = 'OCR Failed';
-      console.error(err);
+// Periodic OCR scan
+async function scanFrame() {
+  if (!workerReady) return setTimeout(scanFrame, 1000);
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  const dataURL = canvas.toDataURL('image/png');
+  const { data: { text } } = await worker.recognize(dataURL);
+  const match = text.match(/\bd{4}s*d{4}s*d{4}\b/);
+  if (match) {
+    const cleanNum = match[0].replace(/s/g, '');
+    if (aadhaarInput.value !== cleanNum) {
+      aadhaarInput.value = cleanNum;
+      console.log('Aadhaar detected:', cleanNum);
     }
-  });
+  }
+  setTimeout(scanFrame, 3000);
+}
+scanFrame();
 
-  // Form submission handler with validation
-  const form = document.getElementById('subsidyForm');
-  form.onsubmit = (e) => {
-    e.preventDefault();
+// Speech Synthesis with Tamil transliteration, then English
+const synth = window.speechSynthesis;
+function speakPrompt(tamilText, englishText, onEnd) {
+  if (synth.speaking) synth.cancel();
+  const tamilUtter = new SpeechSynthesisUtterance(tamilText);
+  tamilUtter.lang = 'en-US';
+  const englishUtter = new SpeechSynthesisUtterance(englishText);
+  englishUtter.lang = 'en-IN';
+  tamilUtter.onend = () => { if (onEnd) onEnd(); synth.speak(englishUtter); };
+  synth.speak(tamilUtter);
+}
 
-    const nameVal = document.getElementById('name').value.trim();
-    const locationVal = document.getElementById('location').value.trim();
-    const subsidyTypeVal = document.getElementById('subsidyType').value;
-    const amountVal = document.getElementById('amount').value.trim();
-    const aadhaarVal = document.getElementById('aadhaarNumber').value;
+// English only speech recognition
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+if (!SpeechRecognition) alert('Speech Recognition not supported on your browser.');
+const recognition = new SpeechRecognition();
+recognition.lang = 'en-IN';
+recognition.interimResults = false;
+recognition.maxAlternatives = 1;
 
-    if (!nameVal || !locationVal || !subsidyTypeVal || !amountVal ||
-        !aadhaarVal || ['Not detected', 'Processing... Please wait', 'OCR Failed'].includes(aadhaarVal)) {
-      alert('Please fill all fields correctly including Aadhaar number.');
-      return;
-    }
+// Helper for voice input with Tamil (transliterated) + English prompts
+function setupVoice(buttonId, inputId, tamilPrompt, englishPrompt) {
+  const btn = document.getElementById(buttonId);
+  const input = document.getElementById(inputId);
 
-    alert(`Form Submitted Successfully!
-Name: ${nameVal}
-Location: ${locationVal}
-Subsidy: ${subsidyTypeVal}
-Amount: ${amountVal}
-Aadhaar: ${aadhaarVal}`);
+  btn.onclick = () => {
+    speakPrompt(tamilPrompt, englishPrompt, () => {
+      recognition.start();
+    });
 
-    form.reset();
-    aadhaarPreview.src = '';
-    aadhaarNumber.value = '';
+    recognition.onresult = e => {
+      input.value = e.results[0][0].transcript;
+      recognition.stop();
+    };
+    recognition.onerror = () => recognition.stop();
   };
+}
+
+setupVoice('voiceName', 'name', 'Ungal peyarai sollunga', 'Please say your name');
+setupVoice('voiceLocation', 'location', 'Ungal pannai idathai sollunga', 'Please say your farm location');
+setupVoice('voiceSubsidy', 'subsidyType', 'Thuvakka uthaviyai sollunga', 'Please say the subsidy type');
+setupVoice('voiceAmount', 'amount', 'Thogaiyai sollunga', 'Please say the amount');
+
+// Form submission handler
+form.onsubmit = e => {
+  e.preventDefault();
+  if (!form.name.value || !form.location.value || !form.subsidyType.value || !form.amount.value || !aadhaarInput.value) {
+    alert('Please fill all fields including Aadhaar number.');
+    return;
+  }
+  alert(`Submitted:
+Name: ${form.name.value}
+Location: ${form.location.value}
+Subsidy: ${form.subsidyType.value}
+Amount: ${form.amount.value}
+Aadhaar: ${aadhaarInput.value}`);
+};
 </script>
 </body>
 </html>
-
