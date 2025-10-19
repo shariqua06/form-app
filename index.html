@@ -91,9 +91,10 @@
   </form>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.0.2/dist/tesseract.min.js"></script>
+<!-- Latest Tesseract.js CDN link as of 2025 -->
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script>
-  // Speech Synthesis - Tamil and English prompts
+  // Speech synthesis: Tamil and English voice prompts
   const synth = window.speechSynthesis;
   function speakPrompt(tamil, english, onEnd) {
     if (synth.speaking) synth.cancel();
@@ -115,7 +116,7 @@
   recognition.interimResults = false;
   recognition.maxAlternatives = 1;
 
-  // Voice input helper
+  // Voice input helper function
   function setupVoiceInput(buttonId, inputId, tamilPrompt, englishPrompt, isSelect=false) {
     const button = document.getElementById(buttonId);
     const input = document.getElementById(inputId);
@@ -129,11 +130,10 @@
       recognition.onresult = (event) => {
         const transcript = event.results[0][0].transcript.trim();
         if (isSelect) {
-          const select = input;
           let matched = false;
-          for (let option of select.options) {
+          for (let option of input.options) {
             if (option.value.toLowerCase() === transcript.toLowerCase()) {
-              select.value = option.value;
+              input.value = option.value;
               matched = true;
               break;
             }
@@ -153,7 +153,7 @@
   setupVoiceInput('voiceAmount', 'amount', 'தயவு செய்து தொகையை கூறுக', 'Please say the amount');
   setupVoiceInput('voiceSubsidy', 'subsidyType', 'தயவு செய்து துவக்க உதவியை தேர்வு செய்யவும்', 'Please say the subsidy type', true);
 
-  // Aadhaar OCR using Tesseract.js worker
+  // Tesseract.js OCR worker setup
   const worker = Tesseract.createWorker({
     logger: m => console.log(m)
   });
@@ -186,7 +186,7 @@
     }
   });
 
-  // Form submit handler
+  // Form submission handler with validation
   const form = document.getElementById('subsidyForm');
   form.onsubmit = (e) => {
     e.preventDefault();
@@ -217,3 +217,4 @@ Aadhaar: ${aadhaarVal}`);
 </script>
 </body>
 </html>
+
