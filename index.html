@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Farmer Subsidy Application – AI Form Filler</title>
-<link href="https://fonts.googleapis.com/css2?family=Material+Icons&family=Inter:wght@400;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Material+Icons&family=Inter:wght@400;700&display=swap" rel="stylesheet">
 <style>
 body {
   font-family: 'Inter', Arial, sans-serif;
@@ -21,8 +21,8 @@ body {
   border-radius: 20px;
   width: 100%;
   max-width: 520px;
-  padding: 28px 14px 38px 14px;
-  box-shadow: 0 8px 32px 0 rgba(112, 144, 176, 0.18);
+  padding: 28px 20px 38px 20px;
+  box-shadow: 0 8px 32px rgba(112, 144, 176, 0.18);
 }
 h2 {
   text-align: center;
@@ -105,13 +105,8 @@ input:focus, select:focus {
   margin-left: 7px;
   transition: background 0.2s;
 }
-.voice-btn:active {
-  background: #d8d6fa;
-}
-.voice-btn[aria-busy='true'] {
-  background: #ffeaa7;
-  color: #e67e22;
-}
+.voice-btn:active { background: #d8d6fa; }
+.voice-btn[aria-busy='true'] { background: #ffeaa7; color: #e67e22; }
 .hint {
   font-size: 0.96em;
   color: #96a1be;
@@ -147,25 +142,23 @@ input:focus, select:focus {
   margin-top: 18px;
   cursor: pointer;
 }
-.submit-btn:hover {
-  background: #644bfd;
-}
-.tamil-keypad {
+.submit-btn:hover { background: #644bfd; }
+.num-keypad {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
+  gap: 5px;
   margin-bottom: 10px;
 }
-.tamil-keypad button {
-  flex: 1 0 18%;
+.num-keypad button {
+  flex: 1 0 30%;
   padding: 10px;
-  font-size: 1em;
+  font-size: 16px;
   border-radius: 6px;
   border: 1px solid #ccc;
   background: #f0f0ff;
   cursor: pointer;
 }
-.tamil-keypad button:active { background:#d0d0ff;}
+.num-keypad button:active { background: #d0d0ff; }
 @media (max-width: 520px) {
   .container { max-width: 97vw; padding: 10px; border-radius: 12px;}
   #video { min-height: 80px; }
@@ -182,7 +175,7 @@ input:focus, select:focus {
   <div class="field-row">
     <div style="flex:1;">
       <label class="field-label" for="name"><span class="icon">person</span>Name</label>
-      <input id="name" placeholder="Enter Name" autocomplete="off" />
+      <input id="name" placeholder="Enter Name" autocomplete="off" required/>
     </div>
     <button type="button" class="voice-btn" aria-label="Voice input name" id="voiceName"><span class="icon">mic</span></button>
   </div>
@@ -191,7 +184,7 @@ input:focus, select:focus {
   <div class="field-row">
     <div style="flex:1;">
       <label class="field-label" for="location"><span class="icon">location_on</span>Farm Location</label>
-      <input id="location" placeholder="Enter Farm Location" autocomplete="off" />
+      <input id="location" placeholder="Enter Farm Location" autocomplete="off" required/>
     </div>
     <button type="button" class="voice-btn" aria-label="Voice input location" id="voiceLocation"><span class="icon">mic</span></button>
   </div>
@@ -200,7 +193,7 @@ input:focus, select:focus {
   <div class="field-row">
     <div style="flex:1;">
       <label class="field-label" for="subsidyType"><span class="icon">agriculture</span>Subsidy Type</label>
-      <select id="subsidyType">
+      <select id="subsidyType" required>
         <option value="">-- Select Subsidy --</option>
         <option value="urimam">Urimam (Fertilizer)</option>
         <option value="parivu">Parivu (Irrigation)</option>
@@ -215,8 +208,8 @@ input:focus, select:focus {
   <div class="field-row">
     <div style="flex:1;">
       <label class="field-label" for="amount"><span class="icon">payments</span>Amount</label>
-      <input id="amount" placeholder="Enter Amount" inputmode="numeric" pattern="[0-9]*" />
-      <div class="tamil-keypad" id="tamilKeypad"></div>
+      <input id="amount" placeholder="Enter Amount" inputmode="numeric" pattern="[0-9]*" required/>
+      <div class="num-keypad" id="numKeypad"></div>
     </div>
     <button type="button" class="voice-btn" aria-label="Voice input amount" id="voiceAmount"><span class="icon">mic</span></button>
   </div>
@@ -226,8 +219,7 @@ input:focus, select:focus {
     <label class="field-label" for="aadhaarNumber"><span class="icon">credit_card</span>Aadhaar Card</label>
     <video id="video" autoplay playsinline muted></video>
     <div class="hint" aria-live="polite"><span class="icon">fact_check</span>Hold card steady; number will auto-fill.</div>
-    <input id="aadhaarNumber" placeholder="Aadhaar Number auto-filled" readonly />
-    <button type="button" class="voice-btn" aria-label="Voice input aadhaar" id="voiceAadhaar"><span class="icon">mic</span></button>
+    <input id="aadhaarNumber" placeholder="Aadhaar Number auto-filled" readonly/>
     <div class="hint" id="cameraError" style="color:#b91c1c; display:none;"><span class="icon" style="color:#b91c1c;">warning</span>Camera not available or permission denied. Enter Aadhaar manually if needed.</div>
     <div class="hint" id="bankLink" style="color:#15803d; display:none;"><span class="icon" style="color:#15803d;">check_circle</span>Bank linked successfully (dummy)</div>
   </div>
@@ -238,14 +230,24 @@ input:focus, select:focus {
 
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script>
-/* ========== PROGRESS BAR ========== */
+// ===== Progress Bar =====
 function setProgress(val){document.querySelector("#progressBar span").style.width=val+"%";}
 setProgress(13);
 ["name","location","subsidyType","amount","aadhaarNumber"].forEach(function(id,i){
   document.getElementById(id).addEventListener("focus",function(){setProgress((i+1)*20);});
 });
 
-/* ========== CAMERA + OCR ========== */
+// ===== Numeric Keypad =====
+const numKeypad=document.getElementById("numKeypad");
+const amountInput=document.getElementById("amount");
+[1,2,3,4,5,6,7,8,9,0].forEach(n=>{
+  const b=document.createElement("button");
+  b.type="button"; b.textContent=n;
+  b.onclick=()=>amountInput.value+=n;
+  numKeypad.appendChild(b);
+});
+
+// ===== Camera + OCR =====
 const video=document.getElementById("video");
 const aadhaarInput=document.getElementById("aadhaarNumber");
 const cameraError=document.getElementById("cameraError");
@@ -267,7 +269,6 @@ async function startCamera(){
   try{
     const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}});
     video.srcObject=stream;
-    video.play();
     cameraAvailable=true;
     video.style.display="block";
     cameraError.style.display="none";
@@ -275,7 +276,7 @@ async function startCamera(){
     cameraAvailable=false;
     video.style.display="none";
     cameraError.style.display="block";
-    console.warn("Camera access denied or not available:",e);
+    console.warn("Camera access denied:",e);
   }
 }
 startCamera();
@@ -302,65 +303,39 @@ async function scanFrame(){
 }
 requestAnimationFrame(scanFrame);
 
-/* ========== VOICE PROMPTS ========== */
-const voiceLinks={
-  name:"https://drive.google.com/uc?export=download&id=1SrOuGA2r2IFrvLN1gKG9Jbv6vB_SLPN0",
-  location:"https://drive.google.com/uc?export=download&id=1pGKF-BnqdbjtZprM-ZRMJV7rQ_oP1NSv",
-  subsidyType:"https://drive.google.com/uc?export=download&id=1psRUf9gCS0HqGIyEzqmuvbooG0wWQ8FL",
-  amount:"https://drive.google.com/uc?export=download&id=1kgJbi7hdhgx1QxSar2uJ2yxlrWcmmEDe",
+// ===== Tamil Audio + Voice Recognition =====
+const voiceLinks = {
+  name: "https://drive.google.com/uc?export=download&id=1SrOuGA2r2IFrvLN1gKG9Jbv6vB_SLPN0",
+  location: "https://drive.google.com/uc?export=download&id=1pGKF-BnqdbjtZprM-ZRMJV7rQ_oP1NSv",
+  subsidy: "https://drive.google.com/uc?export=download&id=1psRUf9gCS0HqGIyEzqmuvbooG0wWQ8FL",
+  amount: "https://drive.google.com/uc?export=download&id=1kgJbi7hdhgx1QxSar2uJ2yxlrWcmmEDe"
 };
 
-function playVoice(link,btn){
-  btn.setAttribute("aria-busy","true");
-  const audio=new Audio(link);
+function playTamilThenEnglish(tamilLink, inputId){
+  const audio=new Audio(tamilLink);
   audio.play();
-  audio.onended=()=>btn.removeAttribute("aria-busy");
-}
-
-function bindVoice(buttonId,inputId,voiceLink){
-  const btn=document.getElementById(buttonId);
-  const input=document.getElementById(inputId);
-  btn.onclick=function(){
-    playVoice(voiceLink,btn);
-    const recognition=new (window.SpeechRecognition||window.webkitSpeechRecognition)();
-    recognition.lang="en-IN";
-    recognition.interimResults=false;
-    recognition.maxAlternatives=1;
-    recognition.onresult=function(e){input.value=e.results[0][0].transcript; recognition.stop();}
-    recognition.onerror=function(){recognition.stop();}
-    setTimeout(()=>{try{recognition.start();}catch(e){}},1500);
-  };
-}
-bindVoice("voiceName","name",voiceLinks.name);
-bindVoice("voiceLocation","location",voiceLinks.location);
-bindVoice("voiceSubsidy","subsidyType",voiceLinks.subsidyType);
-bindVoice("voiceAmount","amount",voiceLinks.amount);
-bindVoice("voiceAadhaar","aadhaarNumber",voiceLinks.amount); // same voice for demo
-
-/* ========== TAMIL KEYPAD ========== */
-const tamilKeys=["௦","௧","௨","௩","௪","௫","௬","௭","௮","௯"];
-const keypadContainer=document.getElementById("tamilKeypad");
-const amountInput=document.getElementById("amount");
-tamilKeys.forEach(function(k){
-  const b=document.createElement("button");
-  b.type="button";
-  b.textContent=k;
-  b.onclick=function(){amountInput.value+=k;};
-  keypadContainer.appendChild(b);
-});
-
-/* ========== FORM SUBMIT ========== */
-document.getElementById("form").onsubmit=function(e){
-  e.preventDefault();
-  function borderErr(id){
-    const el=document.getElementById(id);
-    el.style.borderColor="#ee2929";
-    setTimeout(()=>el.style.borderColor="",1800);
+  audio.onended=()=>{
+    const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
+    if(!SpeechRecognition){ alert("Speech not supported"); return; }
+    const recognition=new SpeechRecognition();
+    recognition.lang='en-IN';
+    recognition.onresult=e=>{ document.getElementById(inputId).value=e.results[0][0].transcript; recognition.stop(); };
+    recognition.onerror=()=>{ recognition.stop(); };
+    recognition.start();
   }
+}
+
+document.getElementById("voiceName").onclick=()=>playTamilThenEnglish(voiceLinks.name,"name");
+document.getElementById("voiceLocation").onclick=()=>playTamilThenEnglish(voiceLinks.location,"location");
+document.getElementById("voiceSubsidy").onclick=()=>playTamilThenEnglish(voiceLinks.subsidy,"subsidyType");
+document.getElementById("voiceAmount").onclick=()=>playTamilThenEnglish(voiceLinks.amount,"amount");
+
+// ===== Form Submit =====
+document.getElementById("form").onsubmit=e=>{
+  e.preventDefault();
+  function borderErr(id){ const el=document.getElementById(id); el.style.borderColor="#ee2929"; setTimeout(()=>el.style.borderColor="",1800);}
   let isValid=true;
-  ["name","location","subsidyType","amount","aadhaarNumber"].forEach(function(id){
-    if(!document.getElementById(id).value){borderErr(id); isValid=false;}
-  });
+  ["name","location","subsidyType","amount","aadhaarNumber"].forEach(function(id){ if(!document.getElementById(id).value){ borderErr(id); isValid=false;} });
   if(!isValid){alert("Please fill all required fields."); return;}
   alert(
     "Form Submitted!\n"+
@@ -373,7 +348,7 @@ document.getElementById("form").onsubmit=function(e){
   );
   document.getElementById("form").reset();
   setProgress(13);
-  document.getElementById("aadhaarNumber").value="";
+  aadhaarInput.value="";
   bankLink.style.display="none";
   document.activeElement.blur();
 };
